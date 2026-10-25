@@ -4,157 +4,291 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tæt på</title>
-<meta name="description" content="Det nærmeste offentlige toilet, drikkevand, legeplads, bibliotek og badested i København, live fra kommunens egne data.">
+<meta name="description" content="Skriv en adresse i København og se alt, hvad kommunen ved om netop det sted: træer, gravearbejder, trafikstøj, solceller, skybrud, lokalplan og det nærmeste toilet, legeplads, bibliotek og drikkevand. Live fra kommunens egne data.">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#fbfbf8;--fg:#0e0e10;--muted:#666669;--rule:#e4e2da;--card:#f1f0ea;
+:root{--bg:#fbfbf8;--fg:#0e0e10;--muted:#666669;--rule:#e4e2da;--card:#ffffff;--soft:#f1f0ea;
  --sienna:#b8451e;--clay:#d96a2c;--mustard:#e8b126;--olive:#7e8d20;--teal:#107078;--oxblood:#992c44;
  --serif:"Fraunces",Georgia,serif;--sans:"Inter",system-ui,sans-serif}
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:16px;line-height:1.45}
-header{display:flex;align-items:baseline;gap:14px;padding:12px 18px 10px;border-bottom:1px solid var(--rule)}
-header h1{font-family:var(--serif);font-weight:600;font-size:28px;margin:0;letter-spacing:-.01em}
-header .tag{color:var(--muted);font-size:14px}
+html,body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:16px;line-height:1.45}
+header{padding:14px 16px 10px}
+header h1{font-family:var(--serif);font-weight:600;font-size:30px;margin:0;letter-spacing:-.01em;line-height:1.1}
+header .tag{color:var(--muted);font-size:14px;margin-top:2px}
 .stripe{height:5px;background:linear-gradient(to right,var(--sienna) 0 16.67%,var(--clay) 16.67% 33.33%,var(--mustard) 33.33% 50%,var(--olive) 50% 66.67%,var(--teal) 66.67% 83.33%,var(--oxblood) 83.33% 100%)}
-main{display:grid;grid-template-columns:400px 1fr;height:calc(100% - 62px)}
-aside{overflow:auto;padding:14px 18px 24px;border-right:1px solid var(--rule)}
-#map{height:100%}
-button.primary{width:100%;font:600 16px var(--sans);padding:12px 14px;border:0;border-radius:8px;background:var(--teal);color:#fff;cursor:pointer}
-button.primary:hover{filter:brightness(1.08)}
-.hint{color:var(--muted);font-size:13px;margin:8px 0 14px}
-h2{font-family:var(--serif);font-weight:600;font-size:19px;margin:18px 0 8px}
-.cats{display:flex;flex-wrap:wrap;gap:6px}
-.cat{display:inline-flex;align-items:center;gap:6px;font-size:13px;padding:5px 10px;border-radius:999px;border:1.5px solid var(--c);color:var(--c);cursor:pointer;user-select:none;background:#fff}
-.cat.on{background:var(--c);color:#fff}
-.cat .n{opacity:.75;font-weight:500}
-ul.near{list-style:none;margin:0;padding:0}
-ul.near li{display:grid;grid-template-columns:12px 1fr auto;gap:10px;align-items:start;padding:10px 0;border-bottom:1px solid var(--rule);cursor:pointer}
-ul.near li:hover{background:var(--card)}
-ul.near .dot{width:12px;height:12px;border-radius:50%;background:var(--c);margin-top:5px}
-ul.near .t{font-weight:600}
-ul.near .s{color:var(--muted);font-size:13px}
-ul.near .d{font-family:var(--serif);font-size:18px;white-space:nowrap}
-.chip{display:inline-block;font-size:11px;padding:1px 7px;border-radius:999px;background:var(--card);color:var(--muted);margin:2px 4px 0 0}
+.search{padding:12px 16px 0;position:relative}
+.row{display:flex;gap:8px}
+input#q{flex:1;font:16px var(--sans);padding:12px 14px;border:1.5px solid var(--rule);border-radius:10px;background:#fff;outline:none;min-width:0}
+input#q:focus{border-color:var(--teal)}
+button.loc{font:600 14px var(--sans);padding:0 14px;border:0;border-radius:10px;background:var(--teal);color:#fff;cursor:pointer;white-space:nowrap}
+button.loc:hover{filter:brightness(1.08)}
+ul.sug{position:absolute;left:16px;right:16px;top:58px;z-index:1000;list-style:none;margin:0;padding:4px 0;background:#fff;border:1px solid var(--rule);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.08);display:none;max-height:300px;overflow:auto}
+ul.sug li{padding:9px 14px;cursor:pointer;font-size:15px}
+ul.sug li:hover,ul.sug li.sel{background:var(--soft)}
+.where{padding:10px 16px 0;font-family:var(--serif);font-size:22px;min-height:1.2em}
+.where small{display:block;font-family:var(--sans);font-size:13px;color:var(--muted);margin-top:2px}
+#map{height:40vh;min-height:260px;margin:12px 16px 0;border-radius:12px;border:1px solid var(--rule)}
+.cards{display:grid;grid-template-columns:1fr;gap:12px;padding:14px 16px 8px}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:14px 16px 12px;border-top:4px solid var(--c)}
+.card h2{font-family:var(--serif);font-weight:600;font-size:19px;margin:0 0 6px}
+.card .st{color:var(--muted);font-size:13px}
+.card .big{font-family:var(--serif);font-size:30px;line-height:1.1;margin:4px 0 2px}
+.card .big small{font-size:16px;color:var(--muted);font-family:var(--sans)}
+.card ul{list-style:none;margin:6px 0 0;padding:0}
+.card li{padding:7px 0;border-top:1px solid var(--rule);font-size:14px}
+.card li:first-child{border-top:0}
+.card .d{float:right;color:var(--muted);font-size:13px;margin-left:8px}
+.card .s{color:var(--muted);font-size:13px}
+.chip{display:inline-block;font-size:11px;padding:1px 7px;border-radius:999px;background:var(--soft);color:var(--muted);margin:3px 4px 0 0;vertical-align:middle}
 .chip.ok{background:#e6f0ee;color:var(--teal)}
 .chip.warn{background:#fbe9e2;color:var(--sienna)}
-footer{font-size:12px;color:var(--muted);margin-top:18px;line-height:1.5}
+.chip.now{background:#fdf3d6;color:#8a6410}
+.card a{color:var(--teal)}
+.bar{height:8px;border-radius:4px;background:var(--soft);margin:8px 0 2px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--c)}
+footer{font-size:12px;color:var(--muted);padding:10px 16px 28px;line-height:1.55}
 footer a{color:var(--teal)}
 .leaflet-popup-content{font-family:var(--sans);font-size:14px}
-.leaflet-popup-content b{font-family:var(--serif);font-size:16px}
-.me{width:18px;height:18px;border-radius:50%;background:var(--teal);border:3px solid #fff;box-shadow:0 0 0 2px var(--teal)}
-@media (max-width:760px){main{grid-template-columns:1fr;grid-template-rows:auto 1fr}aside{border-right:0;border-bottom:1px solid var(--rule);max-height:46vh}}
+.me{width:20px;height:20px;border-radius:50%;background:var(--oxblood);border:3px solid #fff;box-shadow:0 0 0 2px var(--oxblood)}
+@media (min-width:900px){
+ body{display:grid;grid-template-columns:minmax(0,1fr) minmax(380px,44%);grid-template-rows:auto auto auto auto 1fr auto;height:100vh}
+ header,.stripe,.search,.where{grid-column:1}
+ #map{grid-column:2;grid-row:1/7;height:auto;margin:16px 16px 16px 0;position:sticky;top:16px}
+ .cards{grid-column:1;grid-template-columns:1fr 1fr;overflow:auto;align-content:start}
+ footer{grid-column:1}
+}
 </style>
 </head>
 <body>
-<header><h1>Tæt på</h1><span class="tag">det nærmeste i København, live fra kommunens egne data</span></header>
+<header><h1>Tæt på</h1><div class="tag">Alt, hvad kommunen ved om netop dit sted. Live fra Københavns Kommunes egne data.</div></header>
 <div class="stripe"></div>
-<main>
-<aside>
-  <button class="primary" id="locate">Hvor er jeg?</button>
-  <div class="hint">Eller klik et sted på kortet. Listen viser det nærmeste af hver slags.</div>
-  <h2>Vis</h2>
-  <div class="cats" id="cats"></div>
-  <h2>Nærmest dig</h2>
-  <ul class="near" id="near"><li style="grid-template-columns:1fr;color:var(--muted)">Henter kommunens data …</li></ul>
-  <footer id="foot">Data: Københavns Kommune via <a href="https://www.opendata.dk/city-of-copenhagen" target="_blank" rel="noopener">Open Data DK</a>, hentet direkte fra kommunens kortserver, når siden åbnes. Kort: OpenStreetMap.</footer>
-</aside>
+<div class="search">
+  <div class="row"><input id="q" type="search" placeholder="Skriv en adresse i København …" autocomplete="off" spellcheck="false"><button class="loc" id="locate">Hvor er jeg?</button></div>
+  <ul class="sug" id="sug"></ul>
+</div>
+<div class="where" id="where"></div>
 <div id="map"></div>
-</main>
+<div class="cards" id="cards"></div>
+<footer id="foot">Data: Københavns Kommune, hentet live fra kommunens kortserver (<a href="https://www.opendata.dk/city-of-copenhagen" target="_blank" rel="noopener">Open Data DK</a>), når siden åbnes. Intet gemmes. Kort: OpenStreetMap. Afstande er luftlinje × 1,3 og gangtid ved 5 km/t. Støjgrænsen på 53 dB Lden er WHO's vejledende grænse for vejstøj (2018). Siden er bygget af en AI-agent (Claude Code) som en del af et foredrag på Projektledelsesdagen 2026, Københavns Kommune.</footer>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
-const WFS = l => `https://wfs-kbhkort.kk.dk/k101/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=k101:${l}&outputFormat=json&SRSNAME=EPSG:4326`;
+// ---------- helpers ----------
+const WFS = (layer, bbox, max, cql) => `https://wfs-kbhkort.kk.dk/k101/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=k101:${layer}&outputFormat=json&SRSNAME=EPSG:4326` + (max ? `&maxFeatures=${max}` : "") + (bbox ? `&bbox=${bbox.join(",")},EPSG:4326` : "") + (cql ? `&CQL_FILTER=${encodeURIComponent(cql)}` : "");
 const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
-const yes = v => v && /^ja$/i.test(String(v));
-// Categories: which municipal layers, how to read a feature, what to show.
-const CATS = [
- {id:"toilet", name:"Toiletter", color:"--oxblood", on:true, layers:["toilet_puma_agg_tmf_kk","toilet_puma_agg_andre_kk"],
-  keep:p => !/TagetPermanentUdAfDrift/.test(p.status||"") , title:p => p.toilet_lokalitet || p.toilet_betegnelse,
-  sub:p => [p.vejnavn_husnummer, p.postnummer].filter(Boolean).join(", "),
-  chips:p => [ /Døgnåbent/.test(p.aabningstid_doegn||"") ? ["Døgnåbent","ok"] : (p.aabningstid_doegn ? ["Natlukket","warn"]:null),
-               yes(p.handicapadgang) ? ["Handicapadgang","ok"] : null,
-               /Vinterlukket/.test(p.aabningsperiode||"") ? ["Vinterlukket","warn"] : null,
-               /MidlertidigUdeAfDrift|IkkeSatIDrift/.test(p.status||"") ? ["Ude af drift","warn"] : null ].filter(Boolean)},
- {id:"vand", name:"Drikkevand", color:"--teal", on:true, layers:["dp_vandinstallationer_p"],
-  keep:p => p.element==="Drikkepost" && !/ikke/i.test(p.status||""), title:p => p.navn || p.stednavn || "Drikkepost",
-  sub:p => p.stednavn && p.stednavn!==p.navn ? p.stednavn : (p.lokaludvalg||""),
-  chips:p => [/vinterlukning/i.test(p.under_element||"") ? ["Vinterlukket","warn"] : ["Åben hele året","ok"]]},
- {id:"leg", name:"Legepladser", color:"--clay", on:true, layers:["legeplads"],
-  title:p => p.navn, sub:p => [p.adressebeskrivelse, p.bydel].filter(Boolean).join(", "),
-  chips:p => [p.aldersgruppe ? [p.aldersgruppe+" år","ok"] : null, /Bemandet/.test(p.legeplads_type||"") ? ["Bemandet","ok"] : null].filter(Boolean), link:p=>p.link},
- {id:"bib", name:"Biblioteker", color:"--olive", on:true, layers:["biblioteker"],
-  title:p => p.navn, sub:p => [p.adresse, p.postdistrikt].filter(Boolean).join(", "), chips:()=>[], link:p=>p.link},
- {id:"kultur", name:"Kulturhuse", color:"--mustard", on:false, layers:["kulturhus"],
-  title:p => p.navn, sub:p => [p.adresse, p.postdistrikt].filter(Boolean).join(", "), chips:()=>[], link:p=>p.link},
- {id:"bad", name:"Badesteder", color:"--sienna", on:true, layers:["svoemmehaller_mv"],
-  title:p => p.navn, sub:p => [p.kategori, p.adresse].filter(Boolean).join(" · "), chips:()=>[], link:p=>p.link},
- {id:"hund", name:"Hundeområder", color:"--olive", on:false, layers:["hundeomraader"],
-  title:p => p.parknavn, sub:p => p.omraade_type||"", chips:()=>[]},
- {id:"genbrug", name:"Genbrug", color:"--teal", on:false, layers:["genbrugsstation"],
-  title:p => p.navn, sub:p => p.adresse||"", chips:p => [p.kategori ? [p.kategori,""] : null].filter(Boolean)},
- {id:"lader", name:"Elbil-ladere", color:"--mustard", on:false, layers:["elbil_ladestander_i_drift"],
-  title:p => [p.vejnavn, p.husnr].filter(Boolean).join(" "), sub:p => [p.operatoer, p.ladestandertype].filter(Boolean).join(" · "),
-  chips:p => [p.antal_udtag ? [p.antal_udtag+" udtag",""] : null].filter(Boolean)},
+const box = (lon, lat, d) => [lon - d, lat - d, lon + d, lat + d];
+async function feats(layer, bbox, max, cql) { const r = await fetch(WFS(layer, bbox, max, cql)); if (!r.ok) throw new Error(layer + " " + r.status); const j = await r.json(); return (j.features || []).filter(f => f.geometry); }
+const coords = g => { const out = []; (function walk(c) { if (typeof c[0] === "number") out.push(c); else c.forEach(walk); })(g.coordinates); return out; };
+const toR = x => x * Math.PI / 180;
+const dist = (a, b) => { const R = 6371000, dLat = toR(b[1] - a[1]), dLon = toR(b[0] - a[0]); const h = Math.sin(dLat / 2) ** 2 + Math.cos(toR(a[1])) * Math.cos(toR(b[1])) * Math.sin(dLon / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); }; // a,b = [lon,lat]
+const gdist = (p, g) => Math.min(...coords(g).map(c => dist(p, c)));
+const inRing = (p, ring) => { let ins = false; for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) { const [xi, yi] = ring[i], [xj, yj] = ring[j]; if ((yi > p[1]) !== (yj > p[1]) && p[0] < (xj - xi) * (p[1] - yi) / (yj - yi) + xi) ins = !ins; } return ins; };
+const inPoly = (p, g) => { const polys = g.type === "Polygon" ? [g.coordinates] : g.type === "MultiPolygon" ? g.coordinates : []; return polys.some(rings => inRing(p, rings[0]) && !rings.slice(1).some(r => inRing(p, r))); };
+const containing = (p, fs) => fs.find(f => inPoly(p, f.geometry));
+const nearest = (p, fs) => fs.map(f => ({ f, d: gdist(p, f.geometry) })).sort((a, b) => a.d - b.d)[0];
+const fmt = m => m < 1000 ? Math.round(m / 10) * 10 + " m" : (m / 1000).toFixed(1).replace(".", ",") + " km";
+const walkMin = m => Math.max(1, Math.round(m * 1.3 / (5000 / 60))) + " min til fods";
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const n1 = x => (Math.round(x * 10) / 10).toLocaleString("da-DK");
+function pdate(s) { if (!s) return null; let m = /^(\d\d)-(\d\d)-(\d\d)$/.exec(s); if (m) return new Date(2000 + +m[3], +m[2] - 1, +m[1]); const d = new Date(s); return isNaN(d) ? null : d; }
+const ddate = d => d ? d.toLocaleDateString("da-DK", d.getFullYear() === new Date().getFullYear() ? { day: "numeric", month: "short" } : { day: "numeric", month: "short", year: "numeric" }) : "?";
+const period = (a, b) => { const A = pdate(a), B = pdate(b); return A || B ? `${ddate(A)} – ${ddate(B)}` : ""; };
+const chip = (t, k = "") => `<span class="chip ${k}">${esc(t)}</span>`;
+
+// ---------- map ----------
+const map = L.map("map", { zoomControl: true }).setView([55.676, 12.568], 12);
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' }).addTo(map);
+let meMarker = null, ring = null, overlay = L.layerGroup().addTo(map);
+const dot = (ll, color, html, r = 6) => L.circleMarker([ll[1], ll[0]], { radius: r, color: "#fff", weight: 1.5, fillColor: color, fillOpacity: .95 }).bindPopup(html).addTo(overlay);
+
+// ---------- cards ----------
+const CARDS = [
+  { id: "trae", name: "Træerne udenfor", color: "--olive" },
+  { id: "gade", name: "På gaden lige nu", color: "--clay" },
+  { id: "trafik", name: "Trafikmeldinger", color: "--sienna" },
+  { id: "stoej", name: "Trafikstøj ved facaden", color: "--oxblood" },
+  { id: "sol", name: "Solceller på taget", color: "--mustard" },
+  { id: "vand", name: "Skybrud og stormflod", color: "--teal" },
+  { id: "varme", name: "Varme en sommerdag", color: "--sienna" },
+  { id: "plan", name: "Lokalplan og zoner", color: "--olive" },
+  { id: "naer", name: "Det nærmeste", color: "--teal" },
 ];
-const map = L.map("map", {zoomControl:true}).setView([55.676, 12.568], 13);
-L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom:19, attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}).addTo(map);
-let me = null, meMarker = null, line = null;
-const groups = {}, data = {};
-const firstCoord = g => { let c = g.coordinates; while (Array.isArray(c[0])) c = c[0]; return [c[1], c[0]]; };
-const dist = (a, b) => { const R=6371000, toR=x=>x*Math.PI/180, dLat=toR(b[0]-a[0]), dLon=toR(b[1]-a[1]); const h=Math.sin(dLat/2)**2+Math.cos(toR(a[0]))*Math.cos(toR(b[0]))*Math.sin(dLon/2)**2; return 2*R*Math.asin(Math.sqrt(h)); };
-const fmt = m => m < 1000 ? Math.round(m/10)*10 + " m" : (m/1000).toFixed(1).replace(".", ",") + " km";
-const walk = m => Math.max(1, Math.round(m/80)) + " min";
+const cardsEl = document.getElementById("cards");
+cardsEl.innerHTML = CARDS.map(c => `<section class="card" id="c-${c.id}" style="--c:${css(c.color)}"><h2>${c.name}</h2><div class="st">Skriv en adresse, eller tryk "Hvor er jeg?".</div></section>`).join("");
+const setCard = (id, html) => { const el = document.getElementById("c-" + id); el.innerHTML = `<h2>${CARDS.find(c => c.id === id).name}</h2>` + html; };
+const busy = id => setCard(id, `<div class="st">Henter …</div>`);
+const none = (id, what) => setCard(id, `<div class="st">${what}</div>`);
+const fail = (id, e) => { console.warn(id, e); setCard(id, `<div class="st">Kunne ikke hente data (${esc(e.message || e)}).</div>`); };
 
-async function load(cat) {
-  const feats = [];
-  for (const l of cat.layers) {
-    const r = await fetch(WFS(l)); const j = await r.json();
-    for (const f of j.features) { const p = f.properties; if (cat.keep && !cat.keep(p)) continue; if (!f.geometry) continue; feats.push({p, ll: firstCoord(f.geometry)}); }
-  }
-  data[cat.id] = feats;
-  const g = L.layerGroup(); groups[cat.id] = g;
-  feats.forEach(f => L.circleMarker(f.ll, {radius:6, color:"#fff", weight:1.5, fillColor:css(cat.color), fillOpacity:.9})
-    .bindPopup(popup(cat, f)).addTo(g));
-  if (cat.on) g.addTo(map);
-  const b = document.querySelector(`.cat[data-id=${cat.id}] .n`); if (b) b.textContent = feats.length;
-  renderNear();
+// ---------- topics ----------
+async function trae(p) {
+  const fs = await feats("trae_basis", box(p[0], p[1], 0.003), 600);
+  const list = fs.map(f => ({ q: f.properties, ll: coords(f.geometry)[0] })).map(t => ({ ...t, d: dist(p, t.ll) })).filter(t => t.d <= 300).sort((a, b) => a.d - b.d);
+  if (!list.length) return none("trae", "Ingen kommunale træer registreret inden for 300 m.");
+  const aged = list.filter(t => /^\d{4}$/.test(t.q.planteaar) && +t.q.planteaar > 1000);
+  const old = aged.length ? aged.slice().sort((a, b) => (+a.q.planteaar - +b.q.planteaar) || (a.d - b.d))[0] : null;
+  const five = list.slice(0, 5);
+  five.forEach(t => dot(t.ll, css("--olive"), `<b>${esc(t.q.dansk_navn || "Træ")}</b><br>${esc(t.q.traeart || "")}${t.q.planteaar ? "<br>Plantet " + esc(t.q.planteaar) : ""}`, 5));
+  if (old && !five.includes(old)) dot(old.ll, css("--sienna"), `<b>Ældste træ: ${esc(old.q.dansk_navn)}</b><br>Plantet ${esc(old.q.planteaar)}`, 6);
+  setCard("trae", `<div class="big">${list.length} <small>træer inden for 300 m</small></div>` +
+    (old ? `<div class="s">Det ældste er ${old === five[0] ? "lige udenfor" : fmt(old.d) + " væk"}: <b>${esc(old.q.dansk_navn)}</b>, plantet ${esc(old.q.planteaar)}${old.q.saerligt_trae === "ja" ? chip("Særligt træ", "ok") : ""}</div>` : "") +
+    `<ul>` + five.map(t => `<li><span class="d">${fmt(t.d)}</span><b>${esc(t.q.dansk_navn || t.q.traeart || "Træ")}</b> <span class="s">${esc(t.q.traeart || "")}${t.q.planteaar && /^\d{4}$/.test(t.q.planteaar) ? " · plantet " + esc(t.q.planteaar) : ""}</span></li>`).join("") + `</ul>`);
 }
-function popup(cat, f) { const p = f.p; const chips = cat.chips(p).map(c => `<span class="chip ${c[1]}">${c[0]}</span>`).join("");
-  const link = cat.link && cat.link(p) ? `<div><a href="${cat.link(p)}" target="_blank" rel="noopener">Mere</a></div>` : "";
-  return `<b>${cat.title(p)||cat.name}</b><br>${cat.sub(p)||""}<div>${chips}</div>${link}`; }
 
-function renderCats() {
-  const el = document.getElementById("cats");
-  el.innerHTML = CATS.map(c => `<span class="cat ${c.on?"on":""}" data-id="${c.id}" style="--c:${css(c.color)}">${c.name} <span class="n">…</span></span>`).join("");
-  el.querySelectorAll(".cat").forEach(b => b.onclick = () => { const c = CATS.find(x => x.id===b.dataset.id); c.on = !c.on; b.classList.toggle("on", c.on);
-    if (groups[c.id]) { c.on ? groups[c.id].addTo(map) : map.removeLayer(groups[c.id]); } renderNear(); });
+async function gade(p) {
+  const [ev, gr] = await Promise.all([feats("raaden_over_vej_events_anonym_aktuelt", box(p[0], p[1], 0.003), 300), feats("gravetilladelser_aktiv_aabne", box(p[0], p[1], 0.003), 100).catch(() => [])]);
+  const who = {}; gr.forEach(f => { const q = f.properties; who[String(q.sagsnr)] = q; });
+  const seen = new Set(), rows = [];
+  for (const f of ev) { const q = f.properties; const k = String(q.sagsnr || "") + (q.lokation || ""); if (seen.has(k)) continue; seen.add(k); rows.push({ q, d: gdist(p, f.geometry), ll: coords(f.geometry)[0] }); }
+  const now = new Date(), soon = new Date(Date.now() + 28 * 864e5);
+  const act = rows.filter(r => { const a = pdate(r.q.projekt_start), b = pdate(r.q.projekt_slut); return (!b || b >= now) && (!a || a <= soon); }).sort((a, b) => a.d - b.d);
+  if (!act.length) return none("gade", "Ingen tilladelser til gravearbejde, arrangementer, containere eller udeservering inden for 300 m lige nu eller de næste fire uger.");
+  const show = act.slice(0, 8);
+  show.forEach(r => dot(r.ll, css("--clay"), `<b>${esc(r.q.sagstype)}</b> · ${esc(r.q.kategori || "")}<br>${esc(r.q.lokation || "")}<br>${period(r.q.projekt_start, r.q.projekt_slut)}`, 5));
+  setCard("gade", `<div class="big">${act.length} <small>aktive tilladelser inden for 300 m</small></div><ul>` + show.map(r => {
+    const q = r.q, g = who[String(q.sagsnr)] || {}; const started = pdate(q.projekt_start) && pdate(q.projekt_start) <= now;
+    const name = q.arrangementnavn || q.restaurantnavn || ""; const typ = [q.sagstype, q.kategori && q.kategori !== q.sagstype ? q.kategori : null].filter(Boolean).join(" · ");
+    const by = g.bygherre ? `Bygherre: ${esc(g.bygherre)}${g.entreprenoer && g.entreprenoer !== g.bygherre ? ", udføres af " + esc(g.entreprenoer) : ""}` : "";
+    const tid = q.tidspunkt_fra && q.tidspunkt_til ? `kl. ${esc(q.tidspunkt_fra)}–${esc(q.tidspunkt_til)}` : "";
+    return `<li><span class="d">${fmt(r.d)}</span><b>${esc(typ)}</b>${name ? " · " + esc(name) : ""} ${chip(started ? "I gang" : "Kommer", started ? "now" : "")}<div class="s">${esc(q.lokation || "")} · ${period(q.projekt_start, q.projekt_slut)}${tid ? " · " + tid : ""}${q.gravetype ? " · " + esc(q.gravetype) : ""}</div>${by ? `<div class="s">${by}</div>` : ""}</li>`; }).join("") + `</ul>`);
 }
-function renderNear() {
-  const ul = document.getElementById("near");
-  if (!me) { ul.innerHTML = `<li style="grid-template-columns:1fr;color:var(--muted)">${Object.keys(data).length ? 'Tryk "Hvor er jeg?" eller klik på kortet.' : "Henter kommunens data …"}</li>`; return; }
-  const rows = [];
-  for (const c of CATS) { if (!c.on || !data[c.id]) continue; let best = null, bd = Infinity;
-    for (const f of data[c.id]) { const d = dist(me, f.ll); if (d < bd) { bd = d; best = f; } }
-    if (best) rows.push({c, f:best, d:bd}); }
-  rows.sort((a, b) => a.d - b.d);
-  ul.innerHTML = rows.map((r, i) => `<li data-i="${i}" style="--c:${css(r.c.color)}"><span class="dot"></span><div><div class="t">${r.c.title(r.f.p)||r.c.name}</div><div class="s">${r.c.name}${r.c.sub(r.f.p) ? " · " + r.c.sub(r.f.p) : ""}</div><div>${r.c.chips(r.f.p).map(x=>`<span class="chip ${x[1]}">${x[0]}</span>`).join("")}</div></div><div class="d">${fmt(r.d)}<br><span class="s">${walk(r.d)} til fods</span></div></li>`).join("")
-    || `<li style="grid-template-columns:1fr;color:var(--muted)">Vælg mindst én kategori.</li>`;
-  ul.querySelectorAll("li[data-i]").forEach(li => li.onclick = () => { const r = rows[+li.dataset.i]; show(r); });
-}
-function show(r) { if (line) map.removeLayer(line); line = L.polyline([me, r.f.ll], {color:css(r.c.color), weight:3, dashArray:"6 8"}).addTo(map);
-  map.fitBounds(L.latLngBounds([me, r.f.ll]).pad(0.35)); L.popup().setLatLng(r.f.ll).setContent(popup(r.c, r.f)).openOn(map); }
-function setMe(ll, zoom) { me = ll; if (meMarker) meMarker.setLatLng(ll); else meMarker = L.marker(ll, {icon:L.divIcon({className:"", html:'<div class="me"></div>', iconSize:[18,18], iconAnchor:[9,9]})}).addTo(map);
-  if (line) { map.removeLayer(line); line = null; } if (zoom) map.setView(ll, 15); renderNear(); }
-map.on("click", e => setMe([e.latlng.lat, e.latlng.lng], false));
-document.getElementById("locate").onclick = () => { if (!navigator.geolocation) return setMe([55.6761, 12.5683], true);
-  navigator.geolocation.getCurrentPosition(p => setMe([p.coords.latitude, p.coords.longitude], true), () => setMe([55.6761, 12.5683], true), {enableHighAccuracy:true, timeout:8000}); };
 
-renderCats();
-if (location.hash === "#demo") setMe([55.6761, 12.5683], true);
-(async () => { const t0 = Date.now(); await Promise.all(CATS.map(load)); renderNear();
-  const n = Object.values(data).reduce((a, b) => a + b.length, 0);
-  document.getElementById("foot").insertAdjacentHTML("afterbegin", `<div>${n.toLocaleString("da-DK")} steder hentet live kl. ${new Date().toLocaleTimeString("da-DK",{hour:"2-digit",minute:"2-digit"})} på ${((Date.now()-t0)/1000).toFixed(1).replace(".",",")} s.</div>`);
-})();
+async function trafik(p) {
+  const fs = await feats("trafikmelding", box(p[0], p[1], 0.006), 100);
+  const now = new Date();
+  const act = fs.map(f => ({ q: f.properties, d: gdist(p, f.geometry), g: f.geometry })).filter(r => { const b = pdate(r.q.sluttidspunkt), a = pdate(r.q.starttidspunkt); return (!b || b >= now) && (!a || a <= new Date(Date.now() + 14 * 864e5)); }).sort((a, b) => a.d - b.d);
+  if (!act.length) return none("trafik", "Ingen aktuelle trafikmeldinger inden for 600 m.");
+  act.slice(0, 6).forEach(r => L.geoJSON(r.g, { style: { color: css("--sienna"), weight: 4, opacity: .8 } }).bindPopup(`<b>${esc(r.q.haendelsestype)}</b><br>${esc(r.q.stedfaestelse || "")}`).addTo(overlay));
+  setCard("trafik", `<ul>` + act.slice(0, 6).map(r => `<li><span class="d">${fmt(r.d)}</span><b>${esc(r.q.haendelsestype || "Melding")}</b>${r.q.trafikalt_restriktion ? " · " + esc(r.q.trafikalt_restriktion) : ""}<div class="s">${esc((r.q.stedfaestelse || "").trim())} · ${period(r.q.starttidspunkt, r.q.sluttidspunkt)}</div>${r.q.yderligere_information ? `<div class="s">${esc(r.q.yderligere_information.trim())}</div>` : ""}</li>`).join("") + `</ul>`);
+}
+
+async function stoej(p, addr) {
+  let fs = await feats("vejstoej_boliger_2022", box(p[0], p[1], 0.0015), 400);
+  let where = "", pts = [];
+  if (addr && addr.vejnavn) { const m = fs.filter(f => f.properties.vejnavn === addr.vejnavn && String(f.properties.husnummer) === String(addr.husnr)); if (m.length) { pts = m; where = "ved denne adresse"; } }
+  if (!pts.length) { if (!fs.length) fs = await feats("vejstoej_boliger_2022", box(p[0], p[1], 0.005), 600); if (!fs.length) return none("stoej", "Ingen støjberegnede boliger inden for 500 m. Kortlægningen dækker kun boliger."); const n = nearest(p, fs); const q = n.f.properties; pts = fs.filter(f => f.properties.vejnavn === q.vejnavn && f.properties.husnummer === q.husnummer); where = `ved nærmeste bolig, ${esc(q.vejnavn)} ${esc(q.husnummer)}, ${fmt(n.d)} væk`; }
+  const avg = k => pts.reduce((s, f) => s + (+f.properties[k] || 0), 0) / pts.length;
+  const lden = avg("lden"), lnight = avg("lnight"); const over = lden > 53;
+  setCard("stoej", `<div class="big">${n1(lden)} <small>dB Lden (døgn)</small></div><div class="s">${n1(lnight)} dB om natten (Lnight) · ${where} · kortlægning 2022</div><div class="bar"><i style="width:${Math.min(100, Math.max(4, (lden - 35) / 40 * 100))}%"></i></div><div class="s">${over ? chip(`${n1(lden - 53)} dB over WHO's vejledende grænse på 53 dB`, "warn") : chip("Under WHO's vejledende grænse på 53 dB", "ok")}${lden >= 58 ? chip("Over Miljøstyrelsens grænse for nye boliger (58 dB)", "warn") : ""}</div>`);
+}
+
+async function sol(p) {
+  const fs = await feats("solcellepotentiale", box(p[0], p[1], 0.0004), 20);
+  const f = containing(p, fs) || (fs.length ? nearest(p, fs).f : null);
+  if (!f) return none("sol", "Ingen bygning med beregnet solcellepotentiale på dette punkt.");
+  const q = f.properties; const hh = q.mwh_pot ? Math.round(q.mwh_pot * 1000 / 4000) : 0;
+  L.geoJSON(f.geometry, { style: { color: css("--mustard"), weight: 2, fillOpacity: .25 } }).addTo(overlay);
+  setCard("sol", `<div class="big">${q.mwh_pot != null ? n1(q.mwh_pot) : "?"} <small>MWh om året</small></div><div class="s">${esc(q.adresse || q.vejnavn || "Bygningen")}${q.anvendelse ? " · " + esc(q.anvendelse) : ""} · tagflade ${q.arealbyg ? Math.round(q.arealbyg).toLocaleString("da-DK") + " m²" : "?"}</div><div class="s">${q.mwh_pot_ka ? chip("Kommunens vurdering: " + q.mwh_pot_ka, /stort/i.test(q.mwh_pot_ka) ? "ok" : "") : ""}${q.klasse_40 ? chip("Bedste tagflader: " + q.klasse_40) : ""}</div>${hh ? `<div class="s">Svarer til elforbruget i omkring ${hh} husstande (ved 4.000 kWh om året).</div>` : ""}`);
+}
+
+const DEPTH = ["tørt", "lidt vand", "en del vand", "meget vand", "meget vand", "meget vand"];
+async function vand(p) {
+  const [a, b, c] = await Promise.all([feats("f2010cds100_1_0", box(p[0], p[1], 0.0006), 40), feats("f2110cds100_1_077", box(p[0], p[1], 0.0006), 40), feats("hmax263", box(p[0], p[1], 0.0006), 40)]);
+  const pick = fs => { const f = containing(p, fs); if (f) return { q: f.properties, near: false }; if (!fs.length) return null; const n = nearest(p, fs); return n.d <= 60 ? { q: n.f.properties, near: true } : null; };
+  const A = pick(a), B = pick(b), C = pick(c);
+  const cls = r => r ? `<b>${DEPTH[Math.min(+r.q.gridcode, 5)]}</b>${r.near ? ' <span class="s">(nærmeste beregnede celle)</span>' : ""}` : "<b>tørt</b>";
+  const g = r => r ? Math.min(+r.q.gridcode, 5) : 0;
+  const k = r => g(r) === 0 ? "ok" : g(r) === 1 ? "now" : "warn";
+  setCard("vand", `<ul><li>${chip("100-års-regn i dag", k(A))} ${cls(A)}</li><li>${chip("100-års-regn i 2110", k(B))} ${cls(B)}</li><li>${chip("100-års-stormflod", C ? (+C.q.gridcode >= 6 ? "warn" : "now") : "ok")} ${C ? `<b>oversvømmes</b>, vanddybdeklasse ${esc(C.q.gridcode)} af 10${C.near ? ' <span class="s">(nærmeste beregnede celle)</span>' : ""}` : "<b>tørt</b>"}</li></ul><div class="s">Kommunens skybruds- og stormflodskort. Klasserne er kommunens egne vanddybdeklasser, ikke centimeter.</div>`);
+}
+
+async function varme(p) {
+  const fs = await feats("overfladetemp_gns_seneste_tre_aar", box(p[0], p[1], 0.0004), 40);
+  const f = containing(p, fs) || (fs.length ? nearest(p, fs).f : null);
+  if (!f) return none("varme", "Ingen temperaturdata for dette punkt.");
+  const t = +f.properties.overfladetemp;
+  setCard("varme", `<div class="big">${n1(t)} <small>°C overfladetemperatur</small></div><div class="s">En sommerdag, gennemsnit af de seneste tre år, målt fra satellit. ${t >= 36 ? chip("Varm plet", "warn") : t >= 32 ? chip("Middel") : chip("Kølig plet", "ok")}</div><div class="s">Grønne og blå områder i København ligger typisk under 30 °C, tætte tage og asfalt over 36 °C.</div>`);
+}
+
+async function plan(p) {
+  const [lp, bz, pz] = await Promise.all([feats("lokalplaner_kk", box(p[0], p[1], 0.0004), 20), feats("beboerzone", box(p[0], p[1], 0.0004), 5).catch(() => []), feats("parkeringszone", box(p[0], p[1], 0.0004), 5).catch(() => [])]);
+  const inside = lp.filter(f => inPoly(p, f.geometry)).sort((x, y) => (y.properties.lp_vedtaget_br || "").localeCompare(x.properties.lp_vedtaget_br || ""));
+  const L1 = inside[0] || (lp.length ? nearest(p, lp).f : null); const q = L1 ? L1.properties : null;
+  const B = bz.find(f => inPoly(p, f.geometry)) || bz[0]; const P = pz.find(f => inPoly(p, f.geometry)) || pz[0];
+  setCard("plan", `<ul>` +
+    (q ? `<li><b>Lokalplan ${esc(q.plannr)}: ${esc(q.plannavn)}</b><div class="s">${esc(q.anvendelse || "")}${q.lp_status ? " · " + esc(q.lp_status) : ""}${q.lp_vedtaget_br ? " " + esc(String(q.lp_vedtaget_br).slice(0, 4)) : ""}${inside.length > 1 ? ` · ${inside.length - 1} ${inside.length === 2 ? "ældre plan gælder også" : "andre planer gælder også"}` : ""}${q.link ? ` · <a href="${esc(q.link)}" target="_blank" rel="noopener">Læs planen</a>` : ""}</div></li>` : `<li><b>Ingen lokalplan</b> <span class="s">på dette punkt</span></li>`) +
+    `<li><b>Beboerlicens:</b> ${B ? `${esc(B.properties.zone_navn)}-zonen${B.properties.beboerzone_pdf ? ` · <a href="${esc(B.properties.beboerzone_pdf)}" target="_blank" rel="noopener">Kort</a>` : ""}` : "ingen licenszone her"}</li>` +
+    `<li><b>Parkering:</b> ${P ? esc(P.properties.zone_navn || P.properties.kategori) + (P.properties.ptakst_dag ? ` · ${esc(P.properties.ptakst_dag)} kr./time om dagen` : "") : "ingen zone registreret"}</li></ul>`);
+}
+
+const NEAR = [
+  { name: "Toilet", color: "--oxblood", layers: ["toilet_puma_agg_tmf_kk", "toilet_puma_agg_andre_kk"], keep: q => !/TagetPermanentUdAfDrift/.test(q.status || ""), title: q => (q.toilet_lokalitet || "Offentligt toilet").split(";")[0].trim(), sub: q => q.vejnavn_husnummer || "", chips: q => [/Døgnåbent/.test(q.aabningstid_doegn || "") ? ["Døgnåbent", "ok"] : q.aabningstid_doegn ? [q.aabningstid_doegn, "warn"] : null, /^ja$/i.test(q.handicapadgang || "") ? ["Handicapadgang", "ok"] : null, /Vinterlukket/.test(q.aabningsperiode || "") ? ["Vinterlukket", "warn"] : null].filter(Boolean) },
+  { name: "Legeplads", color: "--clay", layers: ["legeplads"], title: q => q.navn, sub: q => q.adressebeskrivelse || "", chips: q => [q.aldersgruppe ? [q.aldersgruppe + " år", "ok"] : null].filter(Boolean), link: q => q.link },
+  { name: "Bibliotek", color: "--olive", layers: ["biblioteker"], title: q => q.navn, sub: q => [q.adresse, q.postdistrikt].filter(Boolean).join(", "), chips: () => [], link: q => q.link },
+  { name: "Drikkevand", color: "--teal", layers: ["dp_vandinstallationer_p"], keep: q => q.element === "Drikkepost" && !/ikke/i.test(q.status || ""), title: q => q.navn || q.stednavn || "Drikkepost", sub: q => q.stednavn && q.stednavn !== q.navn ? q.stednavn : "", chips: q => [/vinterlukning/i.test(q.under_element || "") ? ["Vinterlukket", "warn"] : ["Åben hele året", "ok"]] },
+];
+async function naer(p) {
+  const rows = await Promise.all(NEAR.map(async c => {
+    let best = null;
+    for (const d of [0.008, 0.02, 0.05]) {
+      const all = (await Promise.all(c.layers.map(l => feats(l, box(p[0], p[1], d), 400).catch(() => [])))).flat().filter(f => !c.keep || c.keep(f.properties));
+      if (all.length) { const n = nearest(p, all); best = { c, q: n.f.properties, d: n.d, ll: coords(n.f.geometry)[0] }; break; }
+    }
+    return best;
+  }));
+  const ok = rows.filter(Boolean).sort((a, b) => a.d - b.d);
+  if (!ok.length) return none("naer", "Ingen af kommunens steder fundet inden for 5 km.");
+  ok.forEach(r => dot(r.ll, css(r.c.color), `<b>${esc(r.c.title(r.q) || r.c.name)}</b><br>${esc(r.c.name)} · ${fmt(r.d)}`, 6));
+  setCard("naer", `<ul>` + ok.map(r => `<li><span class="d">${fmt(r.d)}<br>${walkMin(r.d)}</span><b>${esc(r.c.name)}:</b> ${esc(r.c.title(r.q) || "")}${r.c.link && r.c.link(r.q) ? ` <a href="${esc(r.c.link(r.q))}" target="_blank" rel="noopener">Mere</a>` : ""}<div class="s">${esc(r.c.sub(r.q) || "")} ${r.c.chips(r.q).map(x => chip(x[0], x[1])).join("")}</div></li>`).join("") + `</ul>`);
+}
+
+// ---------- go ----------
+let current = null, runId = 0;
+async function go(lon, lat, label, addr) {
+  const id = ++runId; current = { lon, lat, label };
+  const p = [lon, lat];
+  document.getElementById("where").innerHTML = `${esc(label)}<small>Inden for 300 m, hvor ikke andet står. Klik på kortet for at flytte punktet.</small>`;
+  document.getElementById("q").value = label; hideSug();
+  if (label) history.replaceState(null, "", "#" + encodeURIComponent(label));
+  overlay.clearLayers();
+  if (meMarker) meMarker.setLatLng([lat, lon]); else meMarker = L.marker([lat, lon], { icon: L.divIcon({ className: "", html: '<div class="me"></div>', iconSize: [20, 20], iconAnchor: [10, 10] }) }).addTo(map);
+  if (ring) ring.setLatLng([lat, lon]); else ring = L.circle([lat, lon], { radius: 300, color: css("--teal"), weight: 1, fillOpacity: .04, dashArray: "4 6" }).addTo(map);
+  map.setView([lat, lon], 16);
+  CARDS.forEach(c => busy(c.id));
+  const t0 = Date.now();
+  const jobs = { trae, gade, trafik, stoej: pp => stoej(pp, addr), sol, vand, varme, plan, naer };
+  await Promise.all(Object.entries(jobs).map(([k, fn]) => fn(p).catch(e => { if (id === runId) fail(k, e); })));
+  if (id !== runId) return;
+  const f = document.getElementById("foot"); f.querySelector(".when")?.remove();
+  f.insertAdjacentHTML("afterbegin", `<div class="when">Hentet live kl. ${new Date().toLocaleTimeString("da-DK", { hour: "2-digit", minute: "2-digit" })} på ${((Date.now() - t0) / 1000).toFixed(1).replace(".", ",")} s fra ${Object.keys(jobs).length} opslag mod kommunens kortserver.</div>`);
+}
+
+// ---------- address search ----------
+const q = document.getElementById("q"), sug = document.getElementById("sug");
+let sugItems = [], sel = -1, timer = null, lastQ = "";
+const hideSug = () => { sug.style.display = "none"; sel = -1; };
+function showSug(items) { sugItems = items; if (!items.length) return hideSug(); sug.innerHTML = items.map((a, i) => `<li data-i="${i}">${esc(a.adresse)}</li>`).join(""); sug.style.display = "block"; sel = -1;
+  sug.querySelectorAll("li").forEach(li => li.onmousedown = e => { e.preventDefault(); pick(items[+li.dataset.i]); }); }
+const pick = a => go(+a.longitude, +a.latitude, a.adresse, a);
+async function search(text) {
+  const t = text.trim().replace(/'/g, "''"); if (t.length < 2) return hideSug();
+  lastQ = t;
+  try { const fs = await feats("dar_adgangsadresser", null, 8, `adresse ILIKE '${t}%' AND status = 'Gældende'`); if (lastQ !== t) return; showSug(fs.map(f => f.properties).sort((a, b) => a.adresse.localeCompare(b.adresse, "da"))); }
+  catch (e) { console.warn(e); hideSug(); }
+}
+q.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(() => search(q.value), 250); });
+q.addEventListener("keydown", e => { if (sug.style.display !== "block") { if (e.key === "Enter") search(q.value).then(() => sugItems[0] && pick(sugItems[0])); return; }
+  if (e.key === "ArrowDown") { sel = Math.min(sel + 1, sugItems.length - 1); } else if (e.key === "ArrowUp") { sel = Math.max(sel - 1, 0); } else if (e.key === "Enter") { e.preventDefault(); pick(sugItems[Math.max(sel, 0)]); return; } else if (e.key === "Escape") { hideSug(); return; } else return;
+  e.preventDefault(); sug.querySelectorAll("li").forEach((li, i) => li.classList.toggle("sel", i === sel)); });
+q.addEventListener("blur", () => setTimeout(hideSug, 150));
+
+async function reverse(lon, lat) {
+  for (const d of [0.0006, 0.002]) { const fs = await feats("dar_adgangsadresser", box(lon, lat, d), 200).catch(() => []); if (fs.length) { const n = nearest([lon, lat], fs); return n.f.properties; } }
+  return null;
+}
+async function atPoint(lon, lat, zoom) { const a = await reverse(lon, lat); if (a) return go(+a.longitude, +a.latitude, a.adresse, a); return go(lon, lat, `${lat.toFixed(5)}, ${lon.toFixed(5)}`, null); }
+map.on("click", e => atPoint(e.latlng.lng, e.latlng.lat));
+document.getElementById("locate").onclick = () => { if (!navigator.geolocation) return atPoint(12.5683, 55.6761);
+  document.getElementById("where").textContent = "Finder dig …";
+  navigator.geolocation.getCurrentPosition(pos => atPoint(pos.coords.longitude, pos.coords.latitude), () => { document.getElementById("where").innerHTML = `Kunne ikke finde din position.<small>Skriv en adresse i stedet.</small>`; }, { enableHighAccuracy: true, timeout: 10000 }); };
+
+// ---------- start from the URL ----------
+(async () => { const h = decodeURIComponent(location.hash.slice(1)); if (!h) return;
+  if (h === "demo") return search("Molestien 11,").then(() => sugItems[0] && pick(sugItems[0]));
+  const m = /^(-?[\d.]+),\s*(-?[\d.]+)$/.exec(h); if (m) return atPoint(+m[2], +m[1]);
+  const fs = await feats("dar_adgangsadresser", null, 1, `adresse ILIKE '${h.replace(/'/g, "''")}%'`).catch(() => []);
+  if (fs.length) pick(fs[0].properties); else { q.value = h; search(h); } })();
 </script>
 </body>
 </html>
